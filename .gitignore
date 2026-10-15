@@ -218,3 +218,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Janus agent
+.janus/
+
+# Toute variante de fichier de secrets, sauf l'exemple
+.env.*
+!.env.example
+
+# Config locale avec clés d'API
+*.local.toml
+*.local.yaml
+config.local.*
+
+# Clés et certificats
+*.pem
+*.key

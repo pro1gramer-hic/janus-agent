@@ -27,8 +27,8 @@ def test_known_formats_are_redacted_and_restored():
 
 def test_named_secret_values_are_redacted():
     r = Redactor()
-    out = r.redact('ADMIN_PASSWORD = "admin123"\nJWT_SECRET = os.environ["JWT_SECRET"]\nTIMEOUT = 5')
-    assert "admin123" not in out
+    out = r.redact('ADMIN_PASSWORD = "not-a-real-pass"\nJWT_SECRET = os.environ["JWT_SECRET"]\nTIMEOUT = 5')
+    assert "not-a-real-pass" not in out
     assert 'os.environ["JWT_SECRET"]' in out
     assert "TIMEOUT = 5" in out
 

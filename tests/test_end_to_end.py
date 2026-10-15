@@ -13,10 +13,14 @@ from janus_agent.orchestrator import Checker
 from janus_agent.planner import run_plan
 from janus_agent.providers.fake import FakeProvider
 from janus_agent.scanners import run_scan
+from janus_agent.security.redact import secret_values_from_findings
 
 pytest.importorskip("fastapi")
 
-PLANTED_SECRETS = ["taskly-demo-hardcoded-jwt-secret-7f3a9c", "admin123"]
+from conftest import EXAMPLE  # noqa: E402
+
+# Read from example_app at run time: the fake secrets live only there
+PLANTED_SECRETS = sorted(secret_values_from_findings(EXAMPLE, run_scan(EXAMPLE)["findings"]))
 
 
 def placeholder(request, name):
@@ -85,7 +89,8 @@ def test_check_goes_from_11_findings_to_0_with_tests_green(example_copy, fake_co
     assert run_scan(example_copy)["count"] == 0
 
     config_py = (example_copy / "app/config.py").read_text()
-    assert 'os.environ["JWT_SECRET"]' in config_py and "admin123" not in config_py
+    assert 'os.environ["JWT_SECRET"]' in config_py
+    assert not any(secret in config_py for secret in PLANTED_SECRETS)
     assert "NOTIFY_WEBHOOK_URL=  # set in the secret manager" in (example_copy / "deploy/production.env").read_text()
     assert (example_copy / "tests/conftest.py").is_file()
     assert "Model usage:" in output and "config_secrets" in output
@@ -113,6 +118,7 @@ def test_no_secret_ever_reaches_the_model(example_copy, fake_config):
     sent = provider.all_text_sent()
     for secret in PLANTED_SECRETS:
         assert secret not in sent
+    assert len(PLANTED_SECRETS) == 2
     assert "postgresql://" not in sent  # env file values are hidden too
     assert "masked_value" not in sent
 
@@ -154,6 +160,26 @@ def test_weakening_a_test_is_refused(example_copy, fake_config):
                              provider=FakeProvider(fake_config.model, handler=model))
     assert any("tests/test_main.py" in r.reason for r in result.rejections)
     assert result.tests_after is False and not result.success
+
+
+def test_apply_never_writes_a_test_regression(example_copy, fake_config):
+    def model(request):
+        if request.tag == "tests":
+            return {"tool_args": {"edits": []}}  # the conftest fix never comes
+        return scripted_model(request)
+
+    original = (example_copy / "app/config.py").read_text()
+    result, _, output = run_check(example_copy, fake_config, apply=True,
+                                  provider=FakeProvider(fake_config.model, handler=model))
+    assert result.tests_before is True and result.tests_after is False
+    assert not result.applied and "never writes a test regression" in output
+    assert (example_copy / "app/config.py").read_text() == original
+
+
+def test_each_finding_comes_with_a_suggested_fix(example_copy, fake_config):
+    _, provider, _ = run_check(example_copy, fake_config, apply=False)
+    config_request = next(r for r in provider.requests if r.tag == "config_secrets")
+    assert "Suggested fix: env_add to deploy/production.env with key NOTIFY_WEBHOOK_URL" in config_request.messages[0].content
 
 
 def test_rounds_are_limited(example_copy, fake_config):

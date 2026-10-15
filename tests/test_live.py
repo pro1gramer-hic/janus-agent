@@ -11,6 +11,7 @@ import pytest
 from janus_agent import providers
 from janus_agent.config import load_config
 from janus_agent.orchestrator import Checker
+from janus_agent.security.redact import secret_values_from_findings
 
 pytestmark = [
     pytest.mark.live,
@@ -31,4 +32,5 @@ def test_real_model_reduces_findings_without_leaking(example_copy, tmp_path):
     provider.complete = recording
     result = Checker(example_copy, config, provider, out=print, apply=False).run()
     assert len(result.findings_after) < len(result.findings_before)
-    assert all("admin123" not in text for text in sent)
+    secrets = secret_values_from_findings(example_copy, result.findings_before)
+    assert secrets and not any(s in text for s in secrets for text in sent)

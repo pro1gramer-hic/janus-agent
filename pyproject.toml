@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "janus-agent"
+version = "0.1.0"
+description = "Keeps config, docs, secrets and tests true to the code. Works with any language model."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "pro1gramer-hic" }]
+dependencies = ["httpx>=0.27"]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "fastapi>=0.110"]
+
+[project.scripts]
+janus-agent = "janus_agent.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["janus_agent*"]
+
+[tool.setuptools.package-data]
+"janus_agent.prompts" = ["*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["live: calls a real model (set JANUS_LIVE_TEST=1)"]

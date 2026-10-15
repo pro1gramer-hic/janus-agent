@@ -1,0 +1,59 @@
+# Janus Agent configuration example. Copy it to janus-agent.toml and edit.
+# Never put an API key in this file: name the environment variable that holds it
+# (api_key_env), or put `api_key` in janus-agent.local.toml, which git ignores.
+
+[model]
+# One of the providers in janus_agent/providers/: openai_compat, anthropic, fake
+provider = "openai_compat"
+
+# --- Ollama (local, free) ---
+model = "qwen2.5-coder:3b"
+base_url = "http://localhost:11434/v1"
+
+# --- LM Studio (local) ---
+# model = "qwen2.5-coder-7b-instruct"
+# base_url = "http://localhost:1234/v1"
+
+# --- OpenAI ---
+# model = "gpt-4.1-mini"
+# base_url = "https://api.openai.com/v1"
+# api_key_env = "OPENAI_API_KEY"
+
+# --- Groq ---
+# model = "llama-3.3-70b-versatile"
+# base_url = "https://api.groq.com/openai/v1"
+# api_key_env = "GROQ_API_KEY"
+
+# --- vLLM or any self-hosted OpenAI-compatible server (AMD, ...) ---
+# model = "your-model-name"
+# base_url = "http://your-server:8000/v1"
+# api_key_env = "MY_SERVER_KEY"
+
+# --- Anthropic ---
+# provider = "anthropic"
+# model = "claude-opus-5-5"
+# api_key_env = "ANTHROPIC_API_KEY"
+# fallbacks = "default"   # optional: server-side fallback if a request is declined
+
+# auto: native tool calling first, strict JSON if the model does not call the tool.
+# json: always strict JSON (best for small local models). native: tools only.
+tool_calling = "auto"
+max_tokens = 4096
+temperature = 0.0        # ignored by the anthropic provider
+timeout = 300            # seconds per request (small CPU models are slow)
+
+[check]
+max_rounds = 3           # fix rounds before giving up
+max_attempts = 3         # model calls per answer when the reply is invalid
+context_lines = 3        # lines shown around each cited line
+test_command = ["python", "-m", "pytest", "-q"]   # must be in the allowlist
+test_timeout = 600
+
+[pricing]
+# USD per million tokens, to show an estimated cost. Leave out when unknown.
+# A local model costs nothing:
+input_per_mtok = 0.0
+output_per_mtok = 0.0
+
+[memory]
+rules_path = ".janus/rules.md"

@@ -248,7 +248,7 @@ pytest                      # unit and end-to-end tests, no network, no cost
 - Running the project's tests runs the project's code (in a temporary copy, without keys).
 - Small local models are slow on CPU and make mistakes; the agent refuses bad edits and
   reports what is left, but cannot make a weak model right. Tested with Ollama and
-  `qwen2.5-coder:3b` on a laptop CPU: `example_app` went from 11 findings to 0 with green
+  `qwen2.5-coder:3b` running on CPU only: `example_app` went from 11 findings to 0 with green
   tests in about 6 minutes, but an earlier run stopped at 4 findings. Results vary between
   runs.
 - Only Ollama was tested against a real server. The OpenAI-compatible and Anthropic

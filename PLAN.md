@@ -294,7 +294,7 @@ A table per task is printed at the end of each run: calls, tokens in, tokens out
 - Default address is per provider: local Ollama for `openai_compat`, the Anthropic API
   for `anthropic`.
 
-### Live runs (Ollama 0.40.4, `qwen2.5-coder:3b`, laptop CPU, no GPU)
+### Live runs (Ollama 0.40.4, `qwen2.5-coder:3b`, CPU only)
 
 - Run 1, before the fixes above: 11 -> 0 scanner findings at one point, but the tests task
   failed (wrong operation), so the tests stayed red.

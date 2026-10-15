@@ -266,4 +266,49 @@ A table per task is printed at the end of each run: calls, tokens in, tokens out
 
 - [x] Step 1: Janus-bob read in full, this plan written.
 - [x] Step 2: `.gitignore` hardened.
-- [ ] Implementation (see 4.13).
+- [x] Implementation, as designed in section 3:
+  - scanners reused (11 findings on `example_app`, 6 original tests pass); `scan_secrets.py`
+    also knows provider key formats, checks `.md`/`.txt` files for them, and no longer
+    flags limit names such as `max_tokens`;
+  - one `Provider` interface, `openai_compat`, `anthropic` and `fake` providers,
+    auto-discovered; config from TOML + env vars + flags, keys only from env vars or
+    `*.local.toml`; with no config, a local Ollama server is used;
+  - structured output: native tools, strict JSON fallback, schema validation, 3 attempts;
+  - security: redaction (with a last check before each request), path rules, command
+    allowlist with a cleaned environment, test guard, secrets hidden in the printed diff;
+  - check: parallel sub-agents, conflict refusal, independent verification, dry run in a
+    workspace copy, fail-fast check of moved secrets, `--apply` never writes a test
+    regression; plan; learn (system date); costs per task.
+- [x] Tests: 86 (scanners, unit tests with the fake provider, end to end 11 -> 0 with green
+  app tests). One live test, skipped unless `JANUS_LIVE_TEST=1`.
+
+### Changes from the plan, found while testing with a real model
+
+- A task with no finding left was re-run only because of refusal notes from the previous
+  round. Now a task runs only with findings (or, for `tests`, failing tests).
+- The small model used `env_add` on `conftest.py`. The tests prompt now shows an example and
+  says whether `tests/conftest.py` exists; the refusal message names the right operation.
+- Each finding now comes with a fix hint computed in Python ("env_add to
+  deploy/production.env with key X"). The model still decides and every edit is verified.
+- `--apply` refuses to write when tests passed before and fail after.
+- Default address is per provider: local Ollama for `openai_compat`, the Anthropic API
+  for `anthropic`.
+
+### Live runs (Ollama 0.40.4, `qwen2.5-coder:3b`, laptop CPU, no GPU)
+
+- Run 1, before the fixes above: 11 -> 0 scanner findings at one point, but the tests task
+  failed (wrong operation), so the tests stayed red.
+- Run 2, with the tests prompt fix: 11 -> 4 findings, app tests green, about 9 minutes.
+  Left: 3 keys missing from `deploy/production.env`, `PORT` missing from `.env.example`.
+  Every out-of-scope edit (app code, `env_remove` on a deploy file) was refused.
+- Run 3, with the fix hints (`JANUS_LIVE_TEST=1 pytest -m live`, dry run): **11 -> 0
+  findings, app tests green**, 2 rounds, 5 model calls, 7,747 tokens in and 1,264 out,
+  about 6 minutes. JSON mode after the first reply; one invalid reply (`"op": "remove"`)
+  was caught by the schema and fixed on retry. The diff is correct; the only flaw is a
+  stale comment ("Temporary, to make login work locally") left above the moved secrets.
+
+### Not verified
+
+- Anthropic, OpenAI, Groq, LM Studio and vLLM against real servers (no key or server here).
+  Their HTTP payloads are covered by unit tests with a mocked transport.
+- Python 3.11 (only 3.12 is installed here; no 3.12-only syntax is used).

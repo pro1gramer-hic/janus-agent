@@ -118,12 +118,44 @@ def detect_overlaps(tasks: list) -> list:
     return overlaps
 
 
+def fix_hint(finding: dict, root: Path) -> str | None:
+    """A mechanical suggestion computed in Python. The model decides; the agent verifies."""
+    kind, var = finding.get("type"), finding.get("var")
+    claim, truth = finding.get("claim"), finding.get("truth")
+    if kind == "missing_in_env_example":
+        return f'env_add to .env.example with key {var}'
+    if kind == "missing_in_deploy_config":
+        return f'env_add to {finding["config"]} with key {var}'
+    if kind == "unused_in_env_example":
+        return f"env_remove {var} from .env.example, only if the code really never reads it"
+    if kind == "named_secret" and finding.get("suggested_env_var"):
+        name = finding["suggested_env_var"]
+        return (f'replace the line in {finding["file"]} so it reads os.environ["{name}"], '
+                f"then env_add {name} to .env.example and to every deploy config")
+    if kind == "secret_not_fail_fast":
+        return f'replace the read of {var} in {finding["file"]} with os.environ["{var}"]'
+    if kind in ("env_var_not_in_code", "port_mismatch") and claim and truth:
+        return f"replace {claim} with {truth} on that README line"
+    if kind in ("command_file_missing", "app_reference_broken") and truth:
+        return f"replace the command on that README line with: {truth}"
+    if kind == "endpoint_not_in_code":
+        return f"remove the README line documenting {claim}, or replace it with a route that exists"
+    if kind == "undocumented_endpoint" and truth:
+        return f"add a line for `{truth}` to the README endpoint list, in the same style"
+    if kind == "security_claim_false":
+        return "rewrite the claim so it is true, or leave it if the secrets were moved"
+    return None
+
+
 def build_user_message(task: Task, root: Path, redactor: Redactor, radius: int) -> str:
     parts = [f"Files you may edit: {', '.join(sorted(task.allowed))}"
              + (f" and new files under {', '.join(task.prefixes)}" if task.prefixes else ""), ""]
     shown_env = set()
     for i, finding in enumerate(task.findings, start=1):
         parts.append(f"Finding {i}: " + str(context.finding_view(finding, redactor)))
+        hint = fix_hint(finding, root)
+        if hint:
+            parts.append(f"Suggested fix: {redactor.redact(hint)}")
         rel, line = finding.get("file"), finding.get("line")
         if rel and rel not in shown_env:
             parts.append(context.block(f"{rel}", context.snippet(root, rel, line, radius, redactor)))

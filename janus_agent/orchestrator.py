@@ -233,8 +233,14 @@ class Checker:
         for value in sorted(self.secret_values, key=len, reverse=True):
             shown = shown.replace(value, "<hidden secret>")  # never print a secret, even locally
         self.out("\nProposed changes:\n" + shown)
+        regression = result.tests_before is True and result.tests_after is False
         if not result.success:
             self.out("Warning: the scanners or the tests still report problems.")
+        if regression:
+            self.out("Warning: the tests passed before and fail with these changes.")
+            if self.apply:
+                self.out("Not written: --apply never writes a test regression. Review the diff instead.")
+                return
         if self.apply or self.confirm(diff):
             try:
                 ws.write_back(result.changes)

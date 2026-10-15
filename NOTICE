@@ -1,0 +1,20 @@
+Janus Agent
+Copyright (c) 2026 pro1gramer-hic
+
+This product includes code and material from Janus
+(https://github.com/pro1gramer-hic/Janus-bob), released under the MIT License:
+
+    Copyright (c) 2026 pro1gramer-hic
+
+Reused from Janus:
+- janus_agent/scanners/scan_config.py, scan_docs.py, scan_secrets.py
+  (from janus/; import paths changed; in scan_secrets.py: provider key formats,
+  prose-file checks, and limit names such as max_tokens marked as not secret)
+- tests/test_scanners.py (from tests/; import path changed)
+- example_app/ (from example_app/ at the original commit, with its planted issues)
+- docs/traps.md (from docs/traps.md, translated to English)
+
+The rules and workflow of the Janus IBM Bob mode (.bob/custom_modes.yaml) were rewritten
+as Python code and prompt templates in janus_agent/.
+
+The full MIT License text is in the LICENSE file.

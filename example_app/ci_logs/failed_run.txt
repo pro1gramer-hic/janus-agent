@@ -1,0 +1,21 @@
+Run deploy-smoke
+Pulling image taskly:latest
+Starting taskly (APP_ENV=production)
+INFO:     Started server process [42]
+INFO:     Uvicorn running on http://0.0.0.0:8000
+POST /tasks?title=smoke-test
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/srv/app/main.py", line 20, in add_task
+    notify(f"New task: {title}")
+  File "/srv/app/notifications.py", line 7, in notify
+    webhook = os.environ["NOTIFY_WEBHOOK_URL"]
+KeyError: 'NOTIFY_WEBHOOK_URL'
+INFO:     "POST /tasks?title=smoke-test HTTP/1.1" 500 Internal Server Error
+FAILED smoke/test_create_task.py::test_create - assert 500 == 200
+FAILED smoke/test_report.py::test_top_tasks - AssertionError: expected 1 task, got 0
+FAILED smoke/test_notify.py::test_webhook_called - TimeoutError: webhook not reached after 30s
+ERROR  smoke/test_cleanup.py::test_delete - ConnectionResetError: [Errno 104] Connection reset by peer
+WARNING: retrying deploy (attempt 2/3)
+WARNING: retrying deploy (attempt 3/3)
+Error: Process completed with exit code 1.
